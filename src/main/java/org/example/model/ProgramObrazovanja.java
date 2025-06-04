@@ -2,9 +2,6 @@ package org.example.model;
 
 import jakarta.persistence.*;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Entity
 public class ProgramObrazovanja {
     @Id
@@ -15,20 +12,18 @@ public class ProgramObrazovanja {
     private String naziv;
 
     @Column(nullable = false)
-    private int CSVET;
-
-    @OneToMany(mappedBy = "programObrazovanja", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Upis> upisi = new HashSet<>();
+    private int csvet;
 
     public ProgramObrazovanja() {
     }
 
-    public int getProgramObrazovanjaID() {
-        return programObrazovanjaID;
+    public ProgramObrazovanja(String naziv, int csvet) {
+        this.naziv = naziv;
+        this.csvet = csvet;
     }
 
-    public void setProgramObrazovanjaID(int programObrazovanjaID) {
-        this.programObrazovanjaID = programObrazovanjaID;
+    public int getProgramObrazovanjaID() {
+        return programObrazovanjaID;
     }
 
     public String getNaziv() {
@@ -39,19 +34,11 @@ public class ProgramObrazovanja {
         this.naziv = naziv;
     }
 
-    public int getCSVET() {
-        return CSVET;
+    public int getCsvet() {
+        return csvet;
     }
 
-    public void setCSVET(int CSVET) {
-        this.CSVET = CSVET;
-    }
-
-    public Set<Upis> getUpisi() {
-        return upisi;
-    }
-
-    public void setUpisi(Set<Upis> upisi) {
-        this.upisi = upisi;
+    public void setCsvet(int csvet) {
+        this.csvet = csvet;
     }
 }

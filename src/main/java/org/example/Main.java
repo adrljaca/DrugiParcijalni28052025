@@ -3,27 +3,13 @@ package org.example;
 import org.example.model.Polaznik;
 import org.example.model.ProgramObrazovanja;
 import org.example.model.Upis;
+import org.example.util.HibernateUtil;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 
-import java.lang.module.Configuration;
 import java.util.List;
 import java.util.Scanner;
 
-
 public class Main {
-    private static final SessionFactory factory;
-
-    static {
-        try {
-            Configuration configuration = new Configuration().configure();
-            factory = configuration.buildSessionFactory();
-        } catch (Throwable ex) {
-            System.err.println("Initial SessionFactory creation failed." + ex);
-            throw new ExceptionInInitializerError(ex);
-        }
-    }
     public static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
@@ -41,22 +27,22 @@ public class Main {
 
             switch (opcija) {
                 case 1:
-                    unesiPolaznika();
+                    unesiPolaznika(scanner);
                     break;
                 case 2:
-                    unesiProgram();
+                    unesiProgram(scanner);
                     break;
                 case 3:
-                    upisiPolaznika();
+                    upisiPolaznika(scanner);
                     break;
                 case 4:
-                    prebaciPolaznika();
+                    prebaciPolaznika(scanner);
                     break;
                 case 5:
-                    ispisiPolaznike();
+                    ispisiPolaznike(scanner);
                     break;
                 case 0:
-                    factory.close();
+                    HibernateUtil.shutdown();
                     return;
                 default:
                     System.out.println("Nepoznata opcija. Pokušajte ponovo!");
@@ -65,98 +51,96 @@ public class Main {
         }
     }
 
-    static void unesiPolaznika() {
-        Session session = factory.openSession();
-        Transaction tx = session.beginTransaction();
-
-        Polaznik p = new Polaznik();
+    private static void unesiPolaznika(Scanner scanner) {
         System.out.print("Ime: ");
-        p.setIme(scanner.nextLine());
+        String ime = scanner.nextLine();
         System.out.print("Prezime: ");
-        p.setPrezime(scanner.nextLine());
+        String prezime = scanner.nextLine();
 
-        session.save(p);
-        tx.commit();
-        session.close();
+        Polaznik p = new Polaznik(ime, prezime);
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            session.persist(p);
+            session.getTransaction().commit();
+            System.out.println("Polaznik uspješno unesen.");
+        }
     }
 
-    static void unesiProgram() {
-        Session session = factory.openSession();
-        Transaction tx = session.beginTransaction();
-
-        ProgramObrazovanja po = new ProgramObrazovanja();
-        System.out.print("Naziv: ");
-        po.setNaziv(scanner.nextLine());
+    private static void unesiProgram(Scanner scanner) {
+        System.out.print("Naziv programa: ");
+        String naziv = scanner.nextLine();
         System.out.print("CSVET: ");
-        po.setCSVET(Integer.parseInt(scanner.nextLine()));
+        int csvet = Integer.parseInt(scanner.nextLine());
 
-        session.save(po);
-        tx.commit();
-        session.close();
+        ProgramObrazovanja po = new ProgramObrazovanja(naziv, csvet);
+
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            session.persist(po);
+            session.getTransaction().commit();
+            System.out.println("Program uspješno unesen.");
+        }
     }
 
-    static void upisiPolaznika() {
-        Session session = factory.openSession();
-        Transaction tx = session.beginTransaction();
-
+    private static void upisiPolaznika(Scanner scanner) {
         System.out.print("ID polaznika: ");
-        int idPolaznik = Integer.parseInt(scanner.nextLine());
+        int polaznikID = Integer.parseInt(scanner.nextLine());
         System.out.print("ID programa: ");
-        int idProgram = Integer.parseInt(scanner.nextLine());
+        int programID = Integer.parseInt(scanner.nextLine());
 
-        Polaznik p = session.get(Polaznik.class, idPolaznik);
-        ProgramObrazovanja pr = session.get(ProgramObrazovanja.class, idProgram);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            Polaznik p = session.get(Polaznik.class, polaznikID);
+            ProgramObrazovanja prog = session.get(ProgramObrazovanja.class, programID);
 
-        if (p == null || pr == null) {
-            System.out.println("Polaznik ili program nije pronađen.");
-            session.close();
-            return;
+            if (p != null && prog != null) {
+                session.persist(new Upis(p, prog));
+                session.getTransaction().commit();
+                System.out.println("Polaznik uspješno upisan.");
+            } else {
+                System.out.println("Neispravan ID.");
+            }
         }
-
-        Upis u = new Upis();
-        u.setPolaznik(p);
-        u.setProgramObrazovanja(pr);
-        session.save(u);
-
-        tx.commit();
-        session.close();
     }
 
-    static void prebaciPolaznika() {
-        Session session = factory.openSession();
-        Transaction tx = session.beginTransaction();
-
+    private static void prebaciPolaznika(Scanner scanner) {
         System.out.print("ID upisa: ");
-        int idUpis = Integer.parseInt(scanner.nextLine());
-        System.out.print("Novi ID programa: ");
-        int noviIDProgram = Integer.parseInt(scanner.nextLine());
+        int upisID = Integer.parseInt(scanner.nextLine());
+        System.out.print("Novi ID program: ");
+        int noviProgID = Integer.parseInt(scanner.nextLine());
 
-        Upis u = session.get(Upis.class, idUpis);
-        ProgramObrazovanja novi = session.get(ProgramObrazovanja.class, noviIDProgram);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            session.beginTransaction();
+            Upis upis = session.get(Upis.class, upisID);
+            ProgramObrazovanja novi = session.get(ProgramObrazovanja.class, noviProgID);
 
-        if (u == null || novi == null) {
-            System.out.println("Upis ili novi program nije pronađen.");
-            session.close();
-            return;
+            if (upis != null && novi != null) {
+                upis.setProgramObrazovanja(novi);
+                session.merge(upis);
+                session.getTransaction().commit();
+                System.out.println("Prebacivanje je uspješno.");
+            } else {
+                System.out.println("Neispravan ID.");
+            }
         }
-
-        u.setProgramObrazovanja(novi);
-        session.update(u);
-
-        tx.commit();
-        session.close();
     }
 
-    static void ispisiPolaznike() {
-        Session session = factory.openSession();
-        List<Upis> upisi = session.createQuery("FROM Upis", Upis.class).list();
+    private static void ispisiPolaznike(Scanner scanner) {
+        System.out.print("ID programa: ");
+        int programID = Integer.parseInt(scanner.nextLine());
 
-        for (Upis u : upisi) {
-            System.out.println("Polaznik: " + u.getPolaznik().getIme() + " " + u.getPolaznik().getPrezime() +
-                    ", Program: " + u.getProgramObrazovanja().getNaziv() +
-                    ", CSVET: " + u.getProgramObrazovanja().getCSVET());
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<Upis> popis = session.createQuery(
+                            "FROM Upis u WHERE u.programObrazovanja.programObrazovanjaID = :id", Upis.class)
+                    .setParameter("id", programID)
+                    .list();
+
+            if (popis.isEmpty()) {
+                System.out.println("Nema upisanih polaznika.");
+            } else {
+                popis.forEach(u -> System.out.println(u.getPolaznik()));
+            }
         }
-
-        session.close();
     }
 }

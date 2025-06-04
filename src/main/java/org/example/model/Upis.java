@@ -19,12 +19,13 @@ public class Upis {
     public Upis() {
     }
 
-    public int getUpisID() {
-        return upisID;
+    public Upis(Polaznik polaznik, ProgramObrazovanja programObrazovanja) {
+        this.polaznik = polaznik;
+        this.programObrazovanja = programObrazovanja;
     }
 
-    public void setUpisID(int upisID) {
-        this.upisID = upisID;
+    public int getUpisID() {
+        return upisID;
     }
 
     public Polaznik getPolaznik() {
